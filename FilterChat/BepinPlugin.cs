@@ -1,10 +1,11 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using VoidManager;
 using VoidManager.MPModChecks;
-using WebSocketSharp;
+using Gameplay.Chat;
 
 namespace FilterChat
 {
@@ -14,6 +15,7 @@ namespace FilterChat
     public class BepinPlugin : BaseUnityPlugin
     {
         internal static ManualLogSource Log;
+
         private void Awake()
         {
             Log = Logger;
@@ -22,22 +24,12 @@ namespace FilterChat
         }
     }
 
-    [HarmonyPatch(typeof(Gameplay.Chat.TextChat), "IncomingMessage")]
-    public static class ChatPatch
+    [HarmonyPatch(typeof(TextChat), "IncomingMessage")]
+    public static class TextChatPatch
     {
-        static bool Prefix(ref string cloudID, ref string channelTextMessage)
+        static void Prefix(string cloudID, string channelTextMessage)
         {
-            if (IsPlayer(cloudID))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        private static bool IsPlayer(string cloudID)
-        {
-            var player = VoipService.CloudIDToPlayer(cloudID);
-            return player != null && player.UserId != "System";
+            BepinPlugin.Log.LogInfo($"Incoming message from {cloudID}: {channelTextMessage}");
         }
     }
 
