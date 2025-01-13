@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using VoidManager;
 using VoidManager.MPModChecks;
+using WebSocketSharp;
 
 namespace FilterChat
 {
@@ -13,7 +14,6 @@ namespace FilterChat
     public class BepinPlugin : BaseUnityPlugin
     {
         internal static ManualLogSource Log;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "N/A")]
         private void Awake()
         {
             Log = Logger;
@@ -22,6 +22,24 @@ namespace FilterChat
         }
     }
 
+    [HarmonyPatch(typeof(Gameplay.Chat.TextChat), "IncomingMessage")]
+    public static class ChatPatch
+    {
+        static bool Prefix(ref string cloudID, ref string channelTextMessage)
+        {
+            if (IsPlayer(cloudID))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private static bool IsPlayer(string cloudID)
+        {
+            var player = VoipService.CloudIDToPlayer(cloudID);
+            return player != null && player.UserId != "System";
+        }
+    }
 
     public class VoidManagerPlugin : VoidPlugin
     {
